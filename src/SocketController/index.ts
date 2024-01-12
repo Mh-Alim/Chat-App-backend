@@ -10,9 +10,11 @@ const socketHandler = (server : any) => {
             origin: "http://localhost:3000",
             methods: ["GET", "POST"]
         }
-    })
+    });
     
-    io.on("connection", (socket: Socket) => {
+
+   
+    io.on("connection", (socket: any) => {
         console.log("socket connected");
         outerSocket = socket;
         userSocketEvents(socket);

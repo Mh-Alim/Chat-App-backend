@@ -49,7 +49,6 @@ export const loginController = async (req: Request, res: Response) => {
 
 
 export const registerController = async(req:Request,res: Response) => { 
-    console.log("register controller");
     const { name, email, password }: { name: string, email: string, password: string } = req.body;
     
     // check whether email exists or not
@@ -70,14 +69,12 @@ export const registerController = async(req:Request,res: Response) => {
         password
     })
     await user.save();
-    console.log(typeof user._id);
     // jwt token generated
     const token: string = user.getJwtToken();
     res.setHeader('X-Authorization', `Bearer ${token}`);
     res.setHeader("Access-Control-Expose-Headers", "X-Authorization");
 
-    console.log(typeof user._id);
-    console.log("event register");
+    console.log("calling event");
     outerSocket && outerSocket.broadcast.emit("new_user", user._id, user.name);
     res.status(201).json({
         success: true,

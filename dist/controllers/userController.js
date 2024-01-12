@@ -48,7 +48,6 @@ const loginController = (req, res) => __awaiter(void 0, void 0, void 0, function
 });
 exports.loginController = loginController;
 const registerController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("register controller");
     const { name, email, password } = req.body;
     // check whether email exists or not
     const userExist = yield userModel_1.default.findOne({ email });
@@ -65,13 +64,11 @@ const registerController = (req, res) => __awaiter(void 0, void 0, void 0, funct
         password
     });
     yield user.save();
-    console.log(typeof user._id);
     // jwt token generated
     const token = user.getJwtToken();
     res.setHeader('X-Authorization', `Bearer ${token}`);
     res.setHeader("Access-Control-Expose-Headers", "X-Authorization");
-    console.log(typeof user._id);
-    console.log("event register");
+    console.log("calling event");
     SocketController_1.outerSocket && SocketController_1.outerSocket.broadcast.emit("new_user", user._id, user.name);
     res.status(201).json({
         success: true,
