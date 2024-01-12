@@ -15,4 +15,5 @@ router.get("/", (req, res) => {
 router.post("/register", userController_1.registerController);
 router.post("/login", userController_1.loginController);
 router.get("/user-exists", Authorization_1.Authorization, userController_1.userExist);
+router.get("/users", userController_1.allUsersController);
 exports.default = router;

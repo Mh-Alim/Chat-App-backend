@@ -1,5 +1,6 @@
 import { Request,Response } from "express"
 import User from "../models/userModel";
+import { outerSocket } from "../SocketController";
 
 export const loginController = async (req: Request, res: Response) => {
     
@@ -24,6 +25,7 @@ export const loginController = async (req: Request, res: Response) => {
             success: true,
             message: "Login Successfull",
             user: {
+                id : user._id,
                 name: user.name,
                 email : user.email
             }
@@ -73,10 +75,15 @@ export const registerController = async(req:Request,res: Response) => {
     const token: string = user.getJwtToken();
     res.setHeader('X-Authorization', `Bearer ${token}`);
     res.setHeader("Access-Control-Expose-Headers", "X-Authorization");
+
+    console.log(typeof user._id);
+    console.log("event register");
+    outerSocket && outerSocket.broadcast.emit("new_user", user._id, user.name);
     res.status(201).json({
         success: true,
         message: "Successfully Registered",
         user: {
+            id : user._id,
             name: user.name,
             email : user.email
         }
@@ -85,11 +92,21 @@ export const registerController = async(req:Request,res: Response) => {
 }
 
 
-export const userExist = (req: Request, res : Response) => {
+export const userExist = (req: any, res : Response) => {
 
     return res.status(200).json({
         success: true,
-        message : "User Exists"
-        
+        message : "User Exists",
+        user : req.user
+    })
+}
+
+
+export const allUsersController = async (req:Request, res : Response) => {
+    
+    const users = await User.find().select("-password -email")
+    res.status(200).json({
+        success: true,
+        users
     })
 }

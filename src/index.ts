@@ -2,6 +2,9 @@ import express, { Express, Request, Response } from "express";
 import { connectToMongoDB } from "./database";
 import cors from "cors";
 import dotenv from "dotenv";
+
+import socketHandler from "./SocketController";
+
 dotenv.config();
 
 const app:Express = express();
@@ -19,8 +22,18 @@ app.get("/", (req : Request, res: Response) => {
 
 
 import userRoutes from "./routes/userRoutes"
-app.use("/user",userRoutes)
+app.use("/user", userRoutes);
 
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+import chatRoutes from "./routes/chatRoutes"
+app.use("/chat", chatRoutes);
+
+
+const server = app.listen(5000, () => {
+    console.log(`server is running on port ${port}`);
 })
+
+// socket connection
+
+
+socketHandler(server);
+

@@ -12,8 +12,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.userExist = exports.registerController = exports.loginController = void 0;
+exports.allUsersController = exports.userExist = exports.registerController = exports.loginController = void 0;
 const userModel_1 = __importDefault(require("../models/userModel"));
+const SocketController_1 = require("../SocketController");
 const loginController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { email, password } = req.body;
@@ -30,6 +31,7 @@ const loginController = (req, res) => __awaiter(void 0, void 0, void 0, function
             success: true,
             message: "Login Successfull",
             user: {
+                id: user._id,
                 name: user.name,
                 email: user.email
             }
@@ -68,10 +70,14 @@ const registerController = (req, res) => __awaiter(void 0, void 0, void 0, funct
     const token = user.getJwtToken();
     res.setHeader('X-Authorization', `Bearer ${token}`);
     res.setHeader("Access-Control-Expose-Headers", "X-Authorization");
+    console.log(typeof user._id);
+    console.log("event register");
+    SocketController_1.outerSocket && SocketController_1.outerSocket.broadcast.emit("new_user", user._id, user.name);
     res.status(201).json({
         success: true,
         message: "Successfully Registered",
         user: {
+            id: user._id,
             name: user.name,
             email: user.email
         }
@@ -81,7 +87,16 @@ exports.registerController = registerController;
 const userExist = (req, res) => {
     return res.status(200).json({
         success: true,
-        message: "User Exists"
+        message: "User Exists",
+        user: req.user
     });
 };
 exports.userExist = userExist;
+const allUsersController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const users = yield userModel_1.default.find().select("-password -email");
+    res.status(200).json({
+        success: true,
+        users
+    });
+});
+exports.allUsersController = allUsersController;

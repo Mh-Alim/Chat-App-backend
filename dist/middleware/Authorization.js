@@ -21,8 +21,11 @@ const Authorization = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         const token = ((_a = req.header('Authorization')) === null || _a === void 0 ? void 0 : _a.split(" ")[1]) || "";
         const userId = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET || "");
         let user;
-        if (typeof userId === "object")
+        if (typeof userId === "object") {
             user = yield userModel_1.default.findOne({ _id: userId.id });
+            if (!user)
+                throw new Error(`User does not exist`);
+        }
         else
             throw new Error();
         req.user = user;

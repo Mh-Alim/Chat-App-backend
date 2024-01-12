@@ -4,6 +4,7 @@ import { Schema, Types, model } from "mongoose";
 interface IMessage {
     sender: Types.ObjectId,
     receiver: Types.ObjectId,
+    content : string,
     chat: Types.ObjectId,
 }
 
@@ -16,6 +17,10 @@ const messageSchema = new Schema<IMessage>({
         type: Schema.Types.ObjectId,
         ref : "user"
     },
+    content: {
+        type : String,
+        trim : true
+    },
     chat: {
         type: Schema.Types.ObjectId,
         ref : "chat"
@@ -23,6 +28,6 @@ const messageSchema = new Schema<IMessage>({
 }, { timestamps: true });
 
 
-const Message = model<IMessage>("Message", messageSchema);
+const Message = model<IMessage>("message", messageSchema);
 
 export default Message;

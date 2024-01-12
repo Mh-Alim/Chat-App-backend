@@ -13,11 +13,12 @@ export const Authorization = async (req: AuthenticatedRequest, res: Response, ne
     
         const userId = jwt.verify(token, process.env.JWT_SECRET || "");
         let user;
-        
-        if (typeof userId === "object")
-            user = await User.findOne({ _id: userId.id });
-        else throw new Error();
 
+        if (typeof userId === "object") {
+            user = await User.findOne({ _id: userId.id });
+            if(!user) throw new Error(`User does not exist`);
+        }
+        else throw new Error();
 
         req.user = user;
         next();
