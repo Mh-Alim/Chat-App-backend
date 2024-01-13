@@ -69,7 +69,7 @@ const registerController = (req, res) => __awaiter(void 0, void 0, void 0, funct
     res.setHeader('X-Authorization', `Bearer ${token}`);
     res.setHeader("Access-Control-Expose-Headers", "X-Authorization");
     console.log("calling event");
-    SocketController_1.outerSocket && SocketController_1.outerSocket.broadcast.emit("new_user", user._id, user.name);
+    SocketController_1.outerIo.emit("new_user", user._id, user.name);
     res.status(201).json({
         success: true,
         message: "Successfully Registered",

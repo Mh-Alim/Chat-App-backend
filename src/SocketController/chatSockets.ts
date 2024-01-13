@@ -30,25 +30,35 @@ const chatSocketHandler = (socket: any,io:any) => {
         
     });
 
-    socket.on("create_group", async (adminId: string, gpName: string) => {
-        
-        const gpExist = await Chat.findOne({ name: gpName, isGroupChat: true });
-        if (gpExist) {
-            socket.emit("create_group_error","Group already exists")
-            return;
+
+    socket.on("create_gp", async (_id:string,gpName : string) => {
+        try {
+            console.log(_id, gpName);
+            const gpExist = await Chat.findOne({ chatName: gpName, isGroupChat: true });
+            if (gpExist) {
+                throw new Error("Group name already exists");
+            }
+    
+            console.log("creating gp");
+            const gp: any = new Chat({
+                chatName: gpName,
+                isGroupChat: true,
+                users: [_id],
+                groupAdmin: _id
+            });
+    
+            await gp.save();
+            
+            socket.emit('create_gp_success');
+            io.emit("new_gp",gp._id,gpName);
         }
-
-        const gp:any = new Chat({
-            name: gpName,
-            isGroupChat: true,
-            users: [adminId],
-            groupAdmin: adminId
-        });
-
-        await gp.save();
-        socket.emit("create_group_success");
-        io.emit("group_created",gp._id,gp.name)
+        catch (err: any) {
+            console.log(err.message);
+            socket.emit('create_gp_error',err.message);
+        }
     })
+
+
 }
 
 export default chatSocketHandler;

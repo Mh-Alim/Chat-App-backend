@@ -36,21 +36,28 @@ const chatSocketHandler = (socket, io) => {
         console.log(res);
         socket.emit("add_user_success", chat.users[1]._id, chat.users[1].name, month, year, day, hours, minutes);
     }));
-    socket.on("create_group", (adminId, gpName) => __awaiter(void 0, void 0, void 0, function* () {
-        const gpExist = yield chatModel_1.default.findOne({ name: gpName, isGroupChat: true });
-        if (gpExist) {
-            socket.emit("create_group_error", "Group already exists");
-            return;
+    socket.on("create_gp", (_id, gpName) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            console.log(_id, gpName);
+            const gpExist = yield chatModel_1.default.findOne({ chatName: gpName, isGroupChat: true });
+            if (gpExist) {
+                throw new Error("Group name already exists");
+            }
+            console.log("creating gp");
+            const gp = new chatModel_1.default({
+                chatName: gpName,
+                isGroupChat: true,
+                users: [_id],
+                groupAdmin: _id
+            });
+            yield gp.save();
+            socket.emit('create_gp_success');
+            io.emit("new_gp", gp._id, gpName);
         }
-        const gp = new chatModel_1.default({
-            name: gpName,
-            isGroupChat: true,
-            users: [adminId],
-            groupAdmin: adminId
-        });
-        yield gp.save();
-        socket.emit("create_group_success");
-        io.emit("group_created", gp._id, gp.name);
+        catch (err) {
+            console.log(err.message);
+            socket.emit('create_gp_error', err.message);
+        }
     }));
 };
 exports.default = chatSocketHandler;

@@ -1,6 +1,7 @@
 import { Request,Response } from "express"
 import User from "../models/userModel";
-import { outerSocket } from "../SocketController";
+import { outerIo } from "../SocketController";
+import Chat from "../models/chatModel";
 
 export const loginController = async (req: Request, res: Response) => {
     
@@ -75,7 +76,7 @@ export const registerController = async(req:Request,res: Response) => {
     res.setHeader("Access-Control-Expose-Headers", "X-Authorization");
 
     console.log("calling event");
-    outerSocket && outerSocket.broadcast.emit("new_user", user._id, user.name);
+    outerIo.emit("new_user", user._id, user.name);
     res.status(201).json({
         success: true,
         message: "Successfully Registered",
@@ -99,11 +100,13 @@ export const userExist = (req: any, res : Response) => {
 }
 
 
-export const allUsersController = async (req:Request, res : Response) => {
+export const allUsersController = async (req: Request, res: Response) => {
     
     const users = await User.find().select("-password -email")
     res.status(200).json({
         success: true,
         users
     })
-}
+};
+
+

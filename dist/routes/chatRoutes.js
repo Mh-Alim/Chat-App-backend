@@ -9,4 +9,6 @@ const chatController_1 = require("../controllers/chatController");
 const router = express_1.default.Router();
 router.get("/chats", Authorization_1.Authorization, chatController_1.userChats);
 router.get("/chat-rooms", Authorization_1.Authorization, chatController_1.chatRooms);
+router.post("/group", chatController_1.createGroupController);
+router.get("/groups", chatController_1.getAllChatGroups);
 exports.default = router;

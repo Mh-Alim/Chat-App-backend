@@ -2,7 +2,7 @@ import { Server, Socket } from "socket.io";
 import userSocketEvents from "./userSocket";
 import chatSocketHandler from "./chatSockets";
 
-export let outerSocket:any;
+let outerIo:any;
 const socketHandler = (server : any) => {
 
     const io = new Server(server, {
@@ -16,7 +16,6 @@ const socketHandler = (server : any) => {
    
     io.on("connection", (socket: any) => {
         console.log("socket connected");
-        outerSocket = socket;
         userSocketEvents(socket);
 
         chatSocketHandler(socket,io);
@@ -25,9 +24,9 @@ const socketHandler = (server : any) => {
         })
     })
     
-
+    outerIo = io;
 }
 
-
+export {outerIo}
 export default socketHandler
 

@@ -9,9 +9,10 @@ router.get("/", (req, res) => {
         message : "User Route is working properly"
     })
 })
-router.post("/register", registerController)
+router.post("/register", registerController);
 router.post("/login", loginController);
 router.get("/user-exists", Authorization, userExist);
-router.get("/users" ,allUsersController)
+router.get("/users", allUsersController);
+
 
 export default router
