@@ -1,5 +1,4 @@
 import Chat from "../models/chatModel";
-import User from "../models/userModel";
 
 
 const chatSocketHandler = (socket: any,io:any) => {

@@ -1,4 +1,3 @@
-import User from "../models/userModel";
 
 
 const userSocketEvents = (socket:any) => {
