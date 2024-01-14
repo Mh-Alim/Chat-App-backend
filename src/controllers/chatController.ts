@@ -1,6 +1,7 @@
 import { Request,Response } from "express"
 import Chat from "../models/chatModel"
 import {outerIo} from "../SocketController/index"
+import mongoose from "mongoose";
 
 
 
@@ -14,46 +15,38 @@ export const userChats = async (req: any, res : Response) => {
 
 export const chatRooms = async (req: any , res : Response) => {
     try {
-        const myId = req.user._id;
+        let myId:object = req.user._id;
 
-        let chatRooms:any = await Chat.find({ users: { $elemMatch: { $eq: myId } } }).populate({
+        let chatRooms: any = await Chat.find({ users: { $elemMatch: { $eq: myId } } }).populate({
             path: 'users',
             model: 'user',
-            select : '-password -email'
+            select: '-password -email'
         }).populate({
             path: 'lastMessage',
             model: 'message',
-            select : '-sender -receiver'
-        })
+            select: '-sender -receiver'
+        });
+        
+        const strMyId:string = JSON.stringify(myId);
 
 
-        const date = chatRooms.lastMessage ? chatRooms.lastMessage.createdAt : chatRooms.createdAt;
-        const dateObject:Date = new Date(date);
-        const year:number = dateObject.getFullYear();
-        const month:number = dateObject.getMonth() + 1; 
-        const day:number = dateObject.getDate();
-        const hours:number = dateObject.getHours();
-        const min: number = dateObject.getMinutes();
+        const getName = (users: Array<any>) => {
+            if (strMyId === JSON.stringify(users[0]._id)) return users[1].name;
+            else return users[0].name
+        }
+
         
         const filterdChatRooms = chatRooms.map((room: any) => {
             const date = room.lastMessage ? room.lastMessage.createdAt : room.createdAt;
-            const dateObject:Date = new Date(date);
-            const year:number = dateObject.getFullYear();
-            const month:number = dateObject.getMonth() + 1; 
-            const day:number = dateObject.getDate();
-            const hours:number = dateObject.getHours();
-            const min: number = dateObject.getMinutes();
             return {
                 _id: room._id,
-                name: room.name ? room.name : room.users[1].name,
+                name: room.chatName ? room.chatName : getName(room.users),
                 lastMessage: room.lastMessage,
-                month,
-                day,
-                year,
-                hours,
-                min
+                date
             }
-        })
+        });
+
+
         
         res.status(200).json({
             success: true,

@@ -25,7 +25,7 @@ const userChats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 exports.userChats = userChats;
 const chatRooms = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const myId = req.user._id;
+        let myId = req.user._id;
         let chatRooms = yield chatModel_1.default.find({ users: { $elemMatch: { $eq: myId } } }).populate({
             path: 'users',
             model: 'user',
@@ -35,30 +35,20 @@ const chatRooms = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             model: 'message',
             select: '-sender -receiver'
         });
-        const date = chatRooms.lastMessage ? chatRooms.lastMessage.createdAt : chatRooms.createdAt;
-        const dateObject = new Date(date);
-        const year = dateObject.getFullYear();
-        const month = dateObject.getMonth() + 1;
-        const day = dateObject.getDate();
-        const hours = dateObject.getHours();
-        const min = dateObject.getMinutes();
+        const strMyId = JSON.stringify(myId);
+        const getName = (users) => {
+            if (strMyId === JSON.stringify(users[0]._id))
+                return users[1].name;
+            else
+                return users[0].name;
+        };
         const filterdChatRooms = chatRooms.map((room) => {
             const date = room.lastMessage ? room.lastMessage.createdAt : room.createdAt;
-            const dateObject = new Date(date);
-            const year = dateObject.getFullYear();
-            const month = dateObject.getMonth() + 1;
-            const day = dateObject.getDate();
-            const hours = dateObject.getHours();
-            const min = dateObject.getMinutes();
             return {
                 _id: room._id,
-                name: room.name ? room.name : room.users[1].name,
+                name: room.chatName ? room.chatName : getName(room.users),
                 lastMessage: room.lastMessage,
-                month,
-                day,
-                year,
-                hours,
-                min
+                date
             };
         });
         res.status(200).json({

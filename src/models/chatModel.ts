@@ -7,6 +7,8 @@ interface IChat {
     users: Array<Types.ObjectId>;
     lastMessage: Types.ObjectId;
     groupAdmin: Types.ObjectId;
+    createdAt: Date,
+    updatedAt : Date,
 }
 
 const chatSchema = new Schema<IChat>({ 
