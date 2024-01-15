@@ -12,9 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllChatGroups = exports.createGroupController = exports.chatRooms = exports.userChats = void 0;
+exports.AllChatsController = exports.getAllChatGroups = exports.createGroupController = exports.chatRooms = exports.userChats = void 0;
 const chatModel_1 = __importDefault(require("../models/chatModel"));
 const index_1 = require("../SocketController/index");
+const messageModel_1 = __importDefault(require("../models/messageModel"));
 const userChats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const chats = yield chatModel_1.default.find({ users: req.user._id });
     return res.status(200).json({
@@ -45,7 +46,7 @@ const chatRooms = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const filterdChatRooms = chatRooms.map((room) => {
             const date = room.lastMessage ? room.lastMessage.createdAt : room.createdAt;
             return {
-                _id: room._id,
+                chat_id: room._id,
                 name: room.chatName ? room.chatName : getName(room.users),
                 lastMessage: room.lastMessage,
                 date
@@ -111,3 +112,40 @@ const getAllChatGroups = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.getAllChatGroups = getAllChatGroups;
+const AllChatsController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { chatId, sender } = req.body;
+        if (!chatId)
+            throw new Error(`chat id not found`);
+        const chat = yield chatModel_1.default.findOne({ _id: chatId });
+        if (chat.isGroupChat) {
+            const messages = yield messageModel_1.default.find({ chat: chatId }).populate({
+                path: 'sender',
+                select: "-password -email"
+            });
+            return res.status(200).json({
+                success: true,
+                room: chat,
+                chats: messages
+            });
+        }
+        const messages = yield messageModel_1.default.find({ chat: chatId }).populate({
+            path: 'sender',
+            select: "-password -email"
+        }).populate({ path: 'receiver', select: "-password -email" });
+        console.log("messages are ", messages);
+        // console.log("tanta: ",resmessages)
+        res.status(200).json({
+            success: true,
+            chats: messages
+        });
+    }
+    catch (err) {
+        console.log(err.message);
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
+exports.AllChatsController = AllChatsController;

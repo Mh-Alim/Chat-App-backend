@@ -12,9 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.allUsersController = exports.userExist = exports.registerController = exports.loginController = void 0;
+exports.receiverDetails = exports.allUsersController = exports.userExist = exports.registerController = exports.loginController = void 0;
 const userModel_1 = __importDefault(require("../models/userModel"));
 const SocketController_1 = require("../SocketController");
+const chatModel_1 = __importDefault(require("../models/chatModel"));
 const loginController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { email, password } = req.body;
@@ -97,3 +98,33 @@ const allUsersController = (req, res) => __awaiter(void 0, void 0, void 0, funct
     });
 });
 exports.allUsersController = allUsersController;
+const receiverDetails = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { chatId, sender } = req.body;
+        if (!chatId)
+            throw new Error(`chat id not found`);
+        const chat = yield chatModel_1.default.findOne({ _id: chatId });
+        if (chat.isGroupChat) {
+            return res.status(200).json({
+                success: true,
+                isGroupChat: true,
+                room: chat,
+            });
+        }
+        const receiverId = (chat === null || chat === void 0 ? void 0 : chat.users[0].toString()) === sender._id ? chat === null || chat === void 0 ? void 0 : chat.users[1] : chat === null || chat === void 0 ? void 0 : chat.users[0];
+        const receiverDetails = yield userModel_1.default.findOne({ _id: receiverId });
+        res.status(200).json({
+            success: true,
+            isGroupChat: false,
+            receiver: receiverDetails,
+        });
+    }
+    catch (err) {
+        console.log(err.message);
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
+exports.receiverDetails = receiverDetails;

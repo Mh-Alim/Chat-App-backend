@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const chatModel_1 = __importDefault(require("../models/chatModel"));
 const userModel_1 = __importDefault(require("../models/userModel"));
+const messageModel_1 = __importDefault(require("../models/messageModel"));
 const chatSocketHandler = (socket, io) => {
     socket.on('add_user', (myId, otherUserId) => __awaiter(void 0, void 0, void 0, function* () {
         const hasChatBefore = yield chatModel_1.default.findOne({ users: [myId, otherUserId] });
@@ -86,7 +87,7 @@ const chatSocketHandler = (socket, io) => {
             socket.emit('add_user_to_sidebar_success');
             const updatedAt = chat.updatedAt;
             console.log(typeof (myDetails === null || myDetails === void 0 ? void 0 : myDetails._id));
-            io.emit("add_user_sidebar", myDetails, otherUserDetails, updatedAt);
+            io.emit("add_user_sidebar", JSON.stringify(chat._id), myDetails, otherUserDetails, updatedAt);
         }
         catch (err) {
             console.log("err: ", err.message);
@@ -116,6 +117,43 @@ const chatSocketHandler = (socket, io) => {
             console.log("err: ", err.message);
             socket.emit('add_gp_to_sidebar_fail', err.message);
         }
+    }));
+    socket.on('joinRoom', (roomId) => {
+        socket.join(roomId);
+        console.log("connected to room ", roomId);
+    });
+    socket.on('leaveRoom', (roomId) => {
+        socket.leave(roomId);
+        console.log("left the room ", roomId);
+    });
+    socket.on('sendMessage', (content, senderId, roomId) => __awaiter(void 0, void 0, void 0, function* () {
+        const chatRoom = yield chatModel_1.default.findOne({ _id: roomId });
+        if (!chatRoom)
+            throw new Error(`Room does not exist!!!`);
+        if (chatRoom === null || chatRoom === void 0 ? void 0 : chatRoom.isGroupChat) {
+            const message = new messageModel_1.default({
+                sender: senderId,
+                content,
+                chat: roomId
+            });
+            yield message.save();
+            const populatedMessage = yield messageModel_1.default.findOne({ _id: message._id }).populate({ path: 'sender', select: '-password -email' });
+            io.to(roomId).emit('message_received', populatedMessage);
+            return;
+        }
+        // one to one chat
+        const receiverId = chatRoom.users[0].toString() === senderId ? chatRoom.users[1] : chatRoom.users[0];
+        const receiverDetails = yield userModel_1.default.findOne({ _id: receiverId });
+        console.log("rec ", receiverDetails);
+        const message = new messageModel_1.default({
+            sender: senderId,
+            receiver: receiverId,
+            content,
+            chat: roomId
+        });
+        yield message.save();
+        const populatedMessage = yield messageModel_1.default.findOne({ _id: message._id }).populate({ path: 'sender', select: '-password -email' }).populate({ path: 'receiver', select: '-password -email' });
+        io.to(roomId).emit('message_received', populatedMessage);
     }));
 };
 exports.default = chatSocketHandler;

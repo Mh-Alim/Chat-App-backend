@@ -2,6 +2,8 @@ import { Request,Response } from "express"
 import Chat from "../models/chatModel"
 import {outerIo} from "../SocketController/index"
 import mongoose from "mongoose";
+import User from "../models/userModel";
+import Message from "../models/messageModel";
 
 
 
@@ -39,7 +41,7 @@ export const chatRooms = async (req: any , res : Response) => {
         const filterdChatRooms = chatRooms.map((room: any) => {
             const date = room.lastMessage ? room.lastMessage.createdAt : room.createdAt;
             return {
-                _id: room._id,
+                chat_id: room._id,
                 name: room.chatName ? room.chatName : getName(room.users),
                 lastMessage: room.lastMessage,
                 date
@@ -102,7 +104,7 @@ export const createGroupController = async (req: Request, res: Response) => {
 };
 
 
-export const getAllChatGroups = async (req:Request,res: Response) => {
+export const getAllChatGroups = async (req: Request, res: Response) => {
     try {
         const groups = await Chat.find({ isGroupChat: true });
 
@@ -112,11 +114,53 @@ export const getAllChatGroups = async (req:Request,res: Response) => {
         });
 
     }
-    catch (err:any) {
-        console.log("getAllChatGroups error: " , err);
+    catch (err: any) {
+        console.log("getAllChatGroups error: ", err);
         return res.status(500).json({
             success: false,
             message: err.message
         })
     }
+};
+
+export const AllChatsController = async (req : Request, res : Response) => {
+    try {
+        const { chatId, sender } = req.body;
+        if (!chatId) throw new Error(`chat id not found`);
+        const chat: any = await Chat.findOne({ _id: chatId });
+
+        if (chat.isGroupChat) {
+            const messages = await Message.find({ chat: chatId }).populate({
+                path: 'sender',
+                select : "-password -email"
+            })
+            return res.status(200).json({
+                success: true,
+                room : chat,
+                chats : messages
+            })
+        }
+
+        const messages = await Message.find({ chat: chatId }).populate({
+            path: 'sender',
+            select : "-password -email"
+        }).populate({path: 'receiver', select : "-password -email"});
+        console.log("messages are ",messages)
+
+        // console.log("tanta: ",resmessages)
+        res.status(200).json({
+            success: true,
+            chats : messages
+        })
+
+    }
+
+    catch (err:any) {
+        console.log(err.message)
+        res.status(500).json({
+            success: false,
+            message : err.message
+        })
+    }
+
 }

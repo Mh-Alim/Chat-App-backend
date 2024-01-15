@@ -11,4 +11,5 @@ router.get("/chats", Authorization_1.Authorization, chatController_1.userChats);
 router.get("/chat-rooms", Authorization_1.Authorization, chatController_1.chatRooms);
 router.post("/group", chatController_1.createGroupController);
 router.get("/groups", chatController_1.getAllChatGroups);
+router.post("/all_chats", chatController_1.AllChatsController);
 exports.default = router;

@@ -110,3 +110,41 @@ export const allUsersController = async (req: Request, res: Response) => {
 };
 
 
+
+
+export const receiverDetails = async(req: Request, res: Response) => {
+    try {
+        const { chatId, sender } = req.body;
+        if (!chatId) throw new Error(`chat id not found`);
+        const chat: any = await Chat.findOne({ _id: chatId });
+
+        if (chat.isGroupChat) {
+            return res.status(200).json({
+                success: true,
+                isGroupChat: true,
+                room : chat,
+            })
+        }
+        const receiverId = chat?.users[0].toString() === sender._id ? chat?.users[1] : chat?.users[0];
+        const receiverDetails = await User.findOne({ _id: receiverId });
+
+       
+        res.status(200).json({
+            success: true,
+            isGroupChat : false,
+            receiver: receiverDetails,
+        })
+
+    }
+
+    catch (err:any) {
+        console.log(err.message)
+        res.status(500).json({
+            success: false,
+            message : err.message
+        })
+    }
+    
+
+
+}

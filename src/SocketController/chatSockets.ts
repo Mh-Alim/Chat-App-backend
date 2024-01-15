@@ -2,7 +2,6 @@ import mongoose, { mongo } from "mongoose";
 import Chat from "../models/chatModel";
 import User from "../models/userModel";
 import Message from "../models/messageModel";
-import { ObjectId } from "mongodb";
 
 
 const chatSocketHandler = (socket: any,io:any) => {
@@ -94,7 +93,7 @@ const chatSocketHandler = (socket: any,io:any) => {
             const updatedAt = chat.updatedAt;
             console.log(typeof myDetails?._id);
 
-            io.emit("add_user_sidebar", myDetails, otherUserDetails, updatedAt)
+            io.emit("add_user_sidebar", JSON.stringify(chat._id),myDetails, otherUserDetails, updatedAt)
         }
         catch (err: any) {
             console.log("err: ", err.message);
@@ -137,6 +136,48 @@ const chatSocketHandler = (socket: any,io:any) => {
             socket.emit('add_gp_to_sidebar_fail', err.message)
         }
     });
+
+
+    socket.on('joinRoom', (roomId: string) => {
+        socket.join(roomId);
+        console.log("connected to room ",roomId);
+    });
+
+    socket.on('leaveRoom', (roomId: string) => { 
+        socket.leave(roomId);
+        console.log("left the room ", roomId);
+    })
+
+    socket.on('sendMessage', async (content: string, senderId : string, roomId : string) => {
+        
+        const chatRoom = await Chat.findOne({ _id: roomId });
+        if (!chatRoom) throw new Error(`Room does not exist!!!`);
+        
+        if (chatRoom?.isGroupChat) {
+            const message = new Message({
+                sender: senderId,
+                content,
+                chat: roomId
+            });
+            await message.save();
+            const populatedMessage = await Message.findOne({ _id: message._id }).populate({path:'sender', select: '-password -email'});
+            io.to(roomId).emit('message_received', populatedMessage);
+            return
+        }
+        // one to one chat
+        const receiverId = chatRoom.users[0].toString() === senderId? chatRoom.users[1] : chatRoom.users[0];
+        const receiverDetails = await User.findOne({ _id: receiverId });
+        console.log("rec ",receiverDetails)
+        const message = new Message({
+            sender: senderId,
+            receiver: receiverId,
+            content,
+            chat: roomId
+        })
+        await message.save();
+        const populatedMessage = await Message.findOne({ _id: message._id }).populate({path:'sender', select: '-password -email'}).populate({path:'receiver', select : '-password -email'});
+        io.to(roomId).emit('message_received', populatedMessage);
+    })
 }
 
 export default chatSocketHandler;
