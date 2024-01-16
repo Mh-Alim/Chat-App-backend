@@ -93,7 +93,7 @@ const chatSocketHandler = (socket: any,io:any) => {
             const updatedAt = chat.updatedAt;
             console.log(typeof myDetails?._id);
 
-            io.emit("add_user_sidebar", JSON.stringify(chat._id),myDetails, otherUserDetails, updatedAt)
+            io.emit("add_user_sidebar", chat._id.toString(),myDetails, otherUserDetails, updatedAt)
         }
         catch (err: any) {
             console.log("err: ", err.message);
@@ -148,35 +148,82 @@ const chatSocketHandler = (socket: any,io:any) => {
         console.log("left the room ", roomId);
     })
 
-    socket.on('sendMessage', async (content: string, senderId : string, roomId : string) => {
-        
-        const chatRoom = await Chat.findOne({ _id: roomId });
-        if (!chatRoom) throw new Error(`Room does not exist!!!`);
-        
-        if (chatRoom?.isGroupChat) {
+    socket.on('sendMessage', async (content: string, senderId: string, roomId: string) => {
+        try {
+
+            const chatRoom = await Chat.findOne({ _id: roomId });
+
+            if (!chatRoom) throw new Error(`Room does not exist!!!`);
+            if (chatRoom?.isGroupChat) {
+                const message = new Message({
+                    sender: senderId,
+                    content,
+                    chat: roomId
+                });
+                await message.save();
+                chatRoom.lastMessage = message._id;
+                await chatRoom.save();
+                const populatedMessage = await Message.findOne({ _id: message._id }).populate({ path: 'sender', select: '-password -email' });
+                io.to(roomId).emit('message_received', populatedMessage);
+                return
+            }
+            // one to one chat
+            const receiverId = chatRoom.users[0].toString() === senderId ? chatRoom.users[1] : chatRoom.users[0];
+            const receiverDetails = await User.findOne({ _id: receiverId });
+            console.log("rec ", receiverDetails)
             const message = new Message({
                 sender: senderId,
+                receiver: receiverId,
                 content,
                 chat: roomId
-            });
+            })
             await message.save();
-            const populatedMessage = await Message.findOne({ _id: message._id }).populate({path:'sender', select: '-password -email'});
+            chatRoom.lastMessage = message._id;
+            await chatRoom.save();
+            const populatedMessage = await Message.findOne({ _id: message._id }).populate({ path: 'sender', select: '-password -email' }).populate({ path: 'receiver', select: '-password -email' });
             io.to(roomId).emit('message_received', populatedMessage);
-            return
+            io.emit('refresh_sidebar')
         }
-        // one to one chat
-        const receiverId = chatRoom.users[0].toString() === senderId? chatRoom.users[1] : chatRoom.users[0];
-        const receiverDetails = await User.findOne({ _id: receiverId });
-        console.log("rec ",receiverDetails)
-        const message = new Message({
-            sender: senderId,
-            receiver: receiverId,
-            content,
-            chat: roomId
-        })
-        await message.save();
-        const populatedMessage = await Message.findOne({ _id: message._id }).populate({path:'sender', select: '-password -email'}).populate({path:'receiver', select : '-password -email'});
-        io.to(roomId).emit('message_received', populatedMessage);
+        catch (err:any) {
+            console.log(err.message);
+            socket.emit('sendMessage_fail',err.message)
+        }
+        
+    });
+
+
+
+    socket.on('leave', async (userId: string, chatId: string) => {
+        try {
+            const chatRoom = await Chat.findOne({ _id: chatId });
+            if (!chatRoom) {
+                throw new Error(`chat id is invalid`)
+            }
+            if (chatRoom.isGroupChat) {
+                // do for the group chat
+                if (chatRoom.users.length === 1) {
+                    await Message.deleteMany({ chat: chatId });
+                    await Chat.deleteOne({ _id: chatId });
+                    io.emit('leave_success');
+                }
+                else {
+                    const restUsers = chatRoom.users.filter(user => user.toString() !== userId);
+                    chatRoom.users = restUsers;
+                    await chatRoom.save();
+                    io.emit('leave_success');
+                }
+                return;
+            }
+            // for solo chat
+            await Message.deleteMany({ chat: chatId });
+            await Chat.deleteOne({ _id: chatId });
+
+            io.emit('leave_success');
+        }
+        catch (err: any) {
+            console.log(err.message);
+            socket.emit('leave_failed',err.message)
+        }
     })
 }
 

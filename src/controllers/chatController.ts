@@ -27,8 +27,7 @@ export const chatRooms = async (req: any , res : Response) => {
             path: 'lastMessage',
             model: 'message',
             select: '-sender -receiver'
-        });
-        
+        })
         const strMyId:string = JSON.stringify(myId);
 
 
@@ -43,11 +42,12 @@ export const chatRooms = async (req: any , res : Response) => {
             return {
                 chat_id: room._id,
                 name: room.chatName ? room.chatName : getName(room.users),
-                lastMessage: room.lastMessage,
+                lastMessage: room.lastMessage?.content,
                 date
             }
         });
 
+        console.log("filtered chat: ", filterdChatRooms)
 
         
         res.status(200).json({

@@ -44,14 +44,16 @@ const chatRooms = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 return users[0].name;
         };
         const filterdChatRooms = chatRooms.map((room) => {
+            var _a;
             const date = room.lastMessage ? room.lastMessage.createdAt : room.createdAt;
             return {
                 chat_id: room._id,
                 name: room.chatName ? room.chatName : getName(room.users),
-                lastMessage: room.lastMessage,
+                lastMessage: (_a = room.lastMessage) === null || _a === void 0 ? void 0 : _a.content,
                 date
             };
         });
+        console.log("filtered chat: ", filterdChatRooms);
         res.status(200).json({
             success: true,
             chatRooms: filterdChatRooms
